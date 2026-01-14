@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Star Catcher</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #0b0e14; font-family: sans-serif; touch-action: none; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        #player { position: absolute; bottom: 20px; width: 60px; height: 20px; background: #00ffcc; border-radius: 10px; left: 50%; transform: translateX(-50%); }
+        .star { position: absolute; width: 20px; height: 20px; background: #ffcc00; border-radius: 50%; }
+        #score { position: absolute; top: 20px; left: 20px; color: white; font-size: 24px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="score">Score: 0</div>
+    <div id="player"></div>
+</div>
+
+<script>
+    const container = document.getElementById('game-container');
+    const player = document.getElementById('player');
+    const scoreDisplay = document.getElementById('score');
+    let score = 0;
+    let playerX = window.innerWidth / 2;
+
+    // スマホのタッチ操作
+    window.addEventListener('touchmove', (e) => {
+        playerX = e.touches[0].clientX;
+        player.style.left = playerX + 'px';
+    });
+
+    // 星を作る
+    function createStar() {
+        const star = document.createElement('div');
+        star.classList.add('star');
+        star.style.left = Math.random() * (window.innerWidth - 20) + 'px';
+        star.style.top = '-20px';
+        container.appendChild(star);
+
+        let top = -20;
+        const fallInterval = setInterval(() => {
+            top += 5; // 落ちる速度
+            star.style.top = top + 'px';
+
+            // 当たり判定
+            const rect1 = player.getBoundingClientRect();
+            const rect2 = star.getBoundingClientRect();
+
+            if (rect1.left < rect2.right && rect1.right > rect2.left &&
+                rect1.top < rect2.bottom && rect1.bottom > rect2.top) {
+                score += 10;
+                scoreDisplay.innerText = `Score: ${score}`;
+                star.remove();
+                clearInterval(fallInterval);
+            }
+
+            // 画面外に出たら消す
+            if (top > window.innerHeight) {
+                star.remove();
+                clearInterval(fallInterval);
+            }
+        }, 20);
+    }
+
+    setInterval(createStar, 1000); // 1秒ごとに星を降らせる
+</script>
+</body>
+</html>
