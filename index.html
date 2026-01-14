@@ -3,47 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Star Survivor: Evolution</title>
+    <title>Emoji Catch Deluxe</title>
     <style>
-        :root { --main-color: #00ffcc; }
-        body { margin: 0; overflow: hidden; background: #1a1a2e; font-family: sans-serif; touch-action: none; color: white; }
-        
-        /* UIレイアウト */
-        #game-ui { position: absolute; top: 10px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
-        #score-board { font-size: 24px; text-shadow: 0 0 10px var(--main-color); }
-        #high-score { font-size: 14px; opacity: 0.8; }
+        /* 見た目をガラッと変えるCSS */
+        body { 
+            margin: 0; overflow: hidden; 
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); 
+            font-family: 'Segoe UI', sans-serif; touch-action: none; color: white;
+        }
+
+        /* スコア表示 */
+        #game-ui { position: absolute; top: 20px; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
+        #score { font-size: 40px; font-weight: bold; color: #00fff2; text-shadow: 0 0 10px rgba(0,255,242,0.5); }
 
         /* キャラクター */
         #player { 
-            position: absolute; bottom: 30px; width: 70px; height: 70px; 
-            font-size: 50px; display: flex; justify-content: center; align-items: center;
+            position: absolute; bottom: 50px; width: 80px; height: 80px; 
+            font-size: 60px; display: flex; justify-content: center; align-items: center;
             left: 50%; transform: translateX(-50%); z-index: 5;
+            transition: transform 0.05s;
         }
-        .item { position: absolute; font-size: 35px; }
 
-        /* メニュー画面共通 */
+        .item { position: absolute; font-size: 40px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+
+        /* 全画面メニュー */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10, 10, 30, 0.9); display: flex;
+            background: rgba(0, 0, 0, 0.85); display: flex;
             flex-direction: column; justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px);
         }
         
-        /* キャラクター選択リスト */
-        .skin-list { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; justify-content: center; padding: 10px; }
+        /* キャラ選択部分 */
+        .skin-container { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; margin-bottom: 30px; }
+        .skin-list { display: flex; gap: 15px; }
         .skin-item { 
-            font-size: 40px; width: 70px; height: 70px; 
+            font-size: 45px; width: 70px; height: 70px; 
             display: flex; align-items: center; justify-content: center;
-            border: 2px solid #333; border-radius: 15px; background: #222; cursor: pointer;
-            position: relative;
+            border: 3px solid transparent; border-radius: 15px; cursor: pointer;
+            transition: 0.2s;
         }
-        .skin-item.selected { border-color: var(--main-color); background: #333; }
-        .skin-item.locked { filter: grayscale(1) brightness(0.5); }
-        .skin-item.locked::after { content: '🔒'; position: absolute; font-size: 18px; bottom: 5px; right: 5px; }
-        .lock-hint { font-size: 12px; color: #aaa; margin-top: 5px; }
+        .skin-item.selected { border-color: #00fff2; background: rgba(0,255,242,0.2); transform: scale(1.1); }
 
         button {
-            padding: 15px 40px; font-size: 20px; background: var(--main-color); border: none;
-            border-radius: 30px; cursor: pointer; font-weight: bold; color: #1a1a2e;
+            padding: 15px 60px; font-size: 24px; background: #00fff2; border: none;
+            border-radius: 50px; cursor: pointer; font-weight: bold; color: #1a1a2e;
+            box-shadow: 0 5px 15px rgba(0,255,242,0.4);
         }
         .hidden { display: none !important; }
     </style>
@@ -51,74 +56,50 @@
 <body>
 
 <div id="game-ui">
-    <div id="score-board">Score: <span id="current-score">0</span></div>
-    <div id="high-score">Best: <span id="best-score">0</span></div>
+    <div id="score">0</div>
 </div>
 
 <div id="start-menu" class="overlay">
-    <h1>STAR SURVIVOR</h1>
-    <p>キャラを選んでスタート！</p>
-    <div class="skin-list" id="skin-list">
-        </div>
-    <div id="lock-msg" class="lock-hint">ハイスコアで新しい仲間が解放！</div>
-    <br>
+    <h1 style="color: #00fff2; font-size: 40px; margin-bottom: 10px;">EMOJI CATCH</h1>
+    <p>遊びたいキャラを選んでね！</p>
+    <div class="skin-container">
+        <div class="skin-list" id="skin-list">
+            </div>
+    </div>
     <button onclick="startGame()">START</button>
 </div>
 
 <div id="game-over-menu" class="overlay hidden">
-    <h1>GAME OVER</h1>
-    <p id="final-result"></p>
-    <button onclick="backToMenu()">MENU</button>
+    <h1 style="color: #ff4d4d;">GAME OVER</h1>
+    <p id="final-score" style="font-size: 24px;"></p>
+    <button onclick="backToMenu()">RETRY</button>
 </div>
 
 <div id="player">🐱</div>
 
 <script>
-    // キャラクター設定
-    const skins = [
-        { icon: '🐱', name: 'ネコ', unlock: 0 },
-        { icon: '🦊', name: 'キツネ', unlock: 50 },
-        { icon: '🐸', name: 'カエル', unlock: 150 },
-        { icon: '🤖', name: 'ロボ', unlock: 300 },
-        { icon: '🐉', name: 'ドラゴン', unlock: 600 }
-    ];
-
-    let currentSkin = localStorage.getItem('selectedSkin') || '🐱';
-    let highScore = parseInt(localStorage.getItem('highScore')) || 0;
+    // キャラのリスト
+    const skins = ['🐱', '🐶', '🦊', '🐸', '🤖', '🐲'];
+    let currentSkin = '🐱';
     let score = 0;
     let gameActive = false;
 
     const player = document.getElementById('player');
     const skinListEl = document.getElementById('skin-list');
-    const currentScoreEl = document.getElementById('current-score');
-    const bestScoreEl = document.getElementById('best-score');
+    const scoreDisplay = document.getElementById('score');
 
-    // 初期表示
-    function init() {
-        bestScoreEl.innerText = highScore;
-        player.innerText = currentSkin;
-        renderSkins();
-    }
-
-    // キャラクターリストを表示
-    function renderSkins() {
+    // キャラクター選択ボタンを画面に作る
+    function createMenu() {
         skinListEl.innerHTML = '';
-        skins.forEach(skin => {
+        skins.forEach(emoji => {
             const item = document.createElement('div');
-            const isLocked = highScore < skin.unlock;
-            item.className = `skin-item ${isLocked ? 'locked' : ''} ${currentSkin === skin.icon ? 'selected' : ''}`;
-            item.innerText = skin.icon;
-            
-            if (!isLocked) {
-                item.onclick = () => {
-                    currentSkin = skin.icon;
-                    player.innerText = currentSkin;
-                    localStorage.setItem('selectedSkin', currentSkin);
-                    renderSkins();
-                };
-            } else {
-                item.onclick = () => alert(`スコア ${skin.unlock} で解放されるよ！`);
-            }
+            item.className = `skin-item ${currentSkin === emoji ? 'selected' : ''}`;
+            item.innerText = emoji;
+            item.onclick = () => {
+                currentSkin = emoji;
+                player.innerText = emoji;
+                createMenu(); // 再描画して枠線を更新
+            };
             skinListEl.appendChild(item);
         });
     }
@@ -126,36 +107,35 @@
     // ゲーム開始
     function startGame() {
         score = 0;
-        currentScoreEl.innerText = score;
+        scoreDisplay.innerText = score;
         gameActive = true;
         document.getElementById('start-menu').classList.add('hidden');
         document.getElementById('game-over-menu').classList.add('hidden');
-        player.innerText = currentSkin;
         gameLoop();
     }
 
     function gameLoop() {
         if (!gameActive) return;
         createItem();
-        // 難易度：スコアが上がるほど生成が早くなる
-        setTimeout(gameLoop, Math.max(250, 1000 - score * 1.5));
+        // 難易度調整（だんだん早く降ってくる）
+        setTimeout(gameLoop, Math.max(200, 1000 - score * 2));
     }
 
     function createItem() {
         const item = document.createElement('div');
-        const isBomb = Math.random() < 0.25; 
+        const isBomb = Math.random() < 0.2; 
         item.className = 'item';
-        item.innerText = isBomb ? '💣' : '⭐';
-        item.style.left = Math.random() * (window.innerWidth - 40) + 'px';
+        item.innerText = isBomb ? '💣' : '💎'; // 星から宝石に変更
+        item.style.left = Math.random() * (window.innerWidth - 50) + 'px';
         item.style.top = '-50px';
         document.body.appendChild(item);
 
         let top = -50;
-        let fallSpeed = (3 + Math.random() * 3) * (1 + score / 300);
+        let speed = 4 + (score / 100);
 
         const fall = setInterval(() => {
             if (!gameActive) { item.remove(); clearInterval(fall); return; }
-            top += fallSpeed;
+            top += speed;
             item.style.top = top + 'px';
 
             const pRect = player.getBoundingClientRect();
@@ -164,10 +144,10 @@
             if (pRect.left < iRect.right && pRect.right > iRect.left &&
                 pRect.top < iRect.bottom && pRect.bottom > iRect.top) {
                 if (isBomb) {
-                    endGame();
+                    gameOver();
                 } else {
                     score += 10;
-                    currentScoreEl.innerText = score;
+                    scoreDisplay.innerText = score;
                     item.remove();
                     clearInterval(fall);
                 }
@@ -176,32 +156,27 @@
         }, 20);
     }
 
-    function endGame() {
+    function gameOver() {
         gameActive = false;
-        if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('highScore', highScore);
-            bestScoreEl.innerText = highScore;
-        }
         document.getElementById('game-over-menu').classList.remove('hidden');
-        document.getElementById('final-result').innerText = `今回のスコア: ${score}`;
+        document.getElementById('final-score').innerText = `SCORE: ${score}`;
     }
 
     function backToMenu() {
         document.getElementById('game-over-menu').classList.add('hidden');
         document.getElementById('start-menu').classList.remove('hidden');
-        renderSkins();
     }
 
-    // 操作
+    // 操作（指で動かす）
     window.addEventListener('touchmove', (e) => {
         if (!gameActive) return;
         let x = e.touches[0].clientX;
-        x = Math.max(35, Math.min(window.innerWidth - 35, x));
+        x = Math.max(40, Math.min(window.innerWidth - 40, x));
         player.style.left = x + 'px';
     });
 
-    init();
+    // 最初にメニューを生成
+    createMenu();
 </script>
 </body>
 </html>
